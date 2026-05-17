@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ar-drive/backend:dev
+    container_name: ar-drive-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      LISTEN_ADDR: ":8080"
+      DB_PATH: /data/app.db
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_DEFAULT_LOCALE: ru
+    image: ar-drive/frontend:dev
+    container_name: ar-drive-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+  # Опционально: Redis для распределённого rate-limit. Включается через --profile redis.
+  redis:
+    image: redis:7-alpine
+    profiles: ["redis"]
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  data:

@@ -1,0 +1,66 @@
+/* Базовые стили, переменные тем подтягиваются из @snack-uikit/figma-tokens. */
+:root {
+  --ar-bg: var(--sys-neutral-back-default, #fff);
+  --ar-fg: var(--sys-neutral-text-default, #111);
+  --ar-border: var(--sys-neutral-stroke-default, #e0e0e0);
+  --ar-accent: var(--sys-info-accent-default, #0a84ff);
+  --ar-mono-font: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+html[data-theme='dark'] {
+  --ar-bg: var(--sys-neutral-back-default, #111);
+  --ar-fg: var(--sys-neutral-text-default, #fff);
+  --ar-border: var(--sys-neutral-stroke-default, #2a2a2a);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--ar-bg);
+  color: var(--ar-fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ar-layout {
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+}
+.ar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--ar-border);
+  background: var(--ar-bg);
+}
+.ar-header__brand { font-weight: 700; letter-spacing: -0.02em; font-size: 18px; color: var(--ar-fg); text-decoration: none; }
+.ar-header__brand b { color: var(--ar-accent); }
+.ar-header__controls { display: flex; align-items: center; gap: 12px; }
+
+.ar-main { padding: 24px; overflow: auto; }
+
+.ar-empty {
+  display: grid; place-items: center; min-height: 60vh;
+  text-align: center; color: var(--ar-fg); opacity: 0.7;
+}
+
+.ar-card {
+  border: 1px solid var(--ar-border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--ar-bg);
+}
+
+/* File browser layout */
+.ar-fb {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  height: calc(100vh - 56px - 48px);
+}
+.ar-fb__tree { border: 1px solid var(--ar-border); border-radius: 12px; padding: 12px; overflow: auto; }
+.ar-fb__main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ar-fb__toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ar-fb__list { flex: 1; overflow: auto; border: 1px solid var(--ar-border); border-radius: 12px; }
+
+.ar-mono { font-family: var(--ar-mono-font); font-size: 13px; }
+.ar-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
