@@ -6,7 +6,8 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
+# Если lock-файл есть — используем его для воспроизводимых сборок; иначе резолвим версии с нуля.
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install --no-frozen-lockfile; fi
 
 COPY . .
 
