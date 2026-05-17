@@ -13,7 +13,6 @@ import (
 	"github.com/cloud-ru-tech/ar-drive/backend/internal/arclient"
 	"github.com/cloud-ru-tech/ar-drive/backend/internal/audit"
 	"github.com/cloud-ru-tech/ar-drive/backend/internal/auth"
-	"github.com/cloud-ru-tech/ar-drive/backend/internal/folders"
 	"github.com/cloud-ru-tech/ar-drive/backend/internal/middleware"
 	"github.com/cloud-ru-tech/ar-drive/backend/internal/validation"
 )
