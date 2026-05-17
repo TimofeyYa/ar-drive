@@ -79,6 +79,8 @@ func TestStore_DeletePrefix(t *testing.T) {
 
 	list, err := s.List(ctx, "p", "r", "")
 	require.NoError(t, err)
-	// должны остаться "a/" и "x/"
-	require.Len(t, list, 2)
+	// Должен остаться только "x/" — DeletePrefix("a/") удалил
+	// маркеры "a/", "a/b/", "a/b/c/".
+	require.Len(t, list, 1)
+	assert.Equal(t, "x/", list[0].FullPath)
 }

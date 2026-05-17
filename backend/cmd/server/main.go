@@ -26,9 +26,10 @@ import (
 )
 
 func main() {
+	bootstrap := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	cfg, err := config.Load()
 	if err != nil {
-		zerolog.New(os.Stderr).Fatal().Err(err).Msg("load config")
+		bootstrap.Fatal().Err(err).Msg("load config")
 	}
 
 	logger := buildLogger(cfg.LogLevel)

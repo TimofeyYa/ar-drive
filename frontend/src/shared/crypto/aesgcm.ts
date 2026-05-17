@@ -1,36 +1,57 @@
 // AES-GCM-256 для шифрования учётных данных в localStorage.
 // Ключ деривируется PBKDF2-SHA256 (200 000 итераций) из парольной фразы +
 // device-salt (хранится в localStorage как открытое значение).
+//
+// TS 5.7+ ужесточил типы Uint8Array<ArrayBufferLike> — WebCrypto ожидает
+// строго ArrayBuffer (а не SharedArrayBuffer). Поэтому везде, где байты
+// уходят в crypto.subtle, явно нормализуем буфер через toArrayBuffer().
 
 const SALT_KEY = 'ar-drive.salt';
 const ITERATIONS = 200_000;
 
-function b64encode(buf: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)));
-}
-function b64decode(s: string): Uint8Array {
-  return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+/** Приводит ArrayBufferLike к чистому ArrayBuffer (копированием). */
+function toArrayBuffer(view: ArrayBufferView | ArrayBufferLike): ArrayBuffer {
+  if (view instanceof ArrayBuffer) return view;
+  if (ArrayBuffer.isView(view)) {
+    const out = new ArrayBuffer(view.byteLength);
+    new Uint8Array(out).set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+    return out;
+  }
+  // SharedArrayBuffer и т.п.
+  const out = new ArrayBuffer((view as ArrayBufferLike).byteLength);
+  new Uint8Array(out).set(new Uint8Array(view as ArrayBufferLike));
+  return out;
 }
 
-function getOrCreateSalt(): Uint8Array {
+function b64encode(buf: ArrayBufferLike): string {
+  return btoa(String.fromCharCode(...new Uint8Array(toArrayBuffer(buf))));
+}
+function b64decode(s: string): ArrayBuffer {
+  return toArrayBuffer(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+}
+
+function getOrCreateSalt(): ArrayBuffer {
   const stored = localStorage.getItem(SALT_KEY);
   if (stored) return b64decode(stored);
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  localStorage.setItem(SALT_KEY, b64encode(salt.buffer));
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const salt = toArrayBuffer(saltBytes);
+  localStorage.setItem(SALT_KEY, b64encode(salt));
   return salt;
 }
 
 async function deriveKey(passphrase: string): Promise<CryptoKey> {
   const enc = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey(
-    'raw',
+  const passBytes = toArrayBuffer(
     enc.encode(passphrase || `${navigator.userAgent}::ar-drive-default`),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
   );
+  const baseKey = await crypto.subtle.importKey('raw', passBytes, 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: getOrCreateSalt(), iterations: ITERATIONS, hash: 'SHA-256' },
+    {
+      name: 'PBKDF2',
+      salt: getOrCreateSalt(),
+      iterations: ITERATIONS,
+      hash: 'SHA-256',
+    },
     baseKey,
     { name: 'AES-GCM', length: 256 },
     false,
@@ -40,11 +61,12 @@ async function deriveKey(passphrase: string): Promise<CryptoKey> {
 
 export async function encryptJSON(value: unknown, passphrase: string): Promise<string> {
   const key = await deriveKey(passphrase);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const data = new TextEncoder().encode(JSON.stringify(value));
+  const ivBytes = crypto.getRandomValues(new Uint8Array(12));
+  const iv = toArrayBuffer(ivBytes);
+  const data = toArrayBuffer(new TextEncoder().encode(JSON.stringify(value)));
   const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
   // Формат: base64(iv) + "." + base64(ct)
-  return `${b64encode(iv.buffer)}.${b64encode(ct)}`;
+  return `${b64encode(iv)}.${b64encode(ct)}`;
 }
 
 export async function decryptJSON<T>(payload: string, passphrase: string): Promise<T> {
