@@ -3,15 +3,20 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /src
 
-# Кешируем зависимости отдельно
-COPY go.mod go.sum ./
-RUN go mod download
+# Кешируем зависимости отдельно. go.sum может отсутствовать в свежем
+# репозитории — в этом случае сгенерируем его через `go mod tidy` ниже.
+COPY go.mod ./
+COPY go.su[m] ./
+
+# Pure-Go SQLite (modernc.org/sqlite) — CGO не нужен.
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOFLAGS=-mod=mod
 
 COPY . .
 
-# Pure-Go SQLite (modernc.org/sqlite) — CGO не нужен.
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-RUN go build -trimpath -ldflags="-s -w" -o /out/ar-drive-server ./cmd/server
+# `go mod tidy` подтянет недостающие checksum'ы в go.sum, после чего сборка
+# идёт в детерминированном режиме.
+RUN go mod tidy && \
+    go build -trimpath -ldflags="-s -w" -o /out/ar-drive-server ./cmd/server
 
 # ---- Runtime stage ----
 FROM alpine:3.20
